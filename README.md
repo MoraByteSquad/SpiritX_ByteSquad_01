@@ -91,7 +91,7 @@ npm install
 PORT=8000
 MONGO_URI="DB_URI="mongodb+srv://<USERNAME>:<PASSWORD>@<CLUSTER_URL>/<DATABASE>?retryWrites=true&w=majority&appName=<APP_NAME>"
 JWT_SECRET="your_jwt_secret"
-JWT_EXPIRES_IN=""
+JWT_EXPIRES_IN="your_expire_period"
 ```
 *Replace `USERNAME`, `PASSWORD`, `CLUSTER_URL`, `DATABASE`, `APP_NAME` with your actual data.*
 
@@ -157,8 +157,11 @@ The React app will run on `http://localhost:3000`
 
 ## 🎯 How to Use
 🚀 **1. Sign up:** Create an account by providing a unique username and a strong password.
+
 🔑 **2. Log in:** Enter your credentials to access the secure dashboard.
+
 🛠 **3. Stay logged in:** The system remembers you until you log out.
+
 👋 **4. Log out:** Click the logout button to exit the session.
 
 ---
