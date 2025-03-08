@@ -55,8 +55,6 @@ SecureConnect provides:
  ┃ ┣ 📜 package.json
  ┃ ┣ 📜 postcss.config.mjs
  ┃ ┣ 📜 tsconfig.json
-
- ┃ ┣ 📜 .env
 ```
 
 ---
