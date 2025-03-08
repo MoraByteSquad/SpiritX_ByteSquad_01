@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -5,23 +6,17 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod'; // Zod library for validation
 import { zodResolver } from '@hookform/resolvers/zod';
+import axios from 'axios';
 
+// Define the schema using Zod
 const schema = z.object({
-  username: z
-    .string()
-    .min(8, { message: 'Username must be at least 8 characters long' })
-    .regex(/^\S*$/, { message: 'Username cannot have spaces' }), // Ensures no spaces
-  email: z.string().email('Please enter a valid email'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters long')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[@$!%*?&]/, 'Password must contain at least one special character'),
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
+  username: z.string().min(8, 'Username must be at least 8 characters long'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters long'),
+  confirmPassword: z.string().min(8, 'Confirm Password must be at least 8 characters long'),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'], // This will set the error on confirmPassword
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
 });
 
 export default function Signup() {
@@ -34,19 +29,43 @@ export default function Signup() {
 
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [authError, setAuthError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const { register, handleSubmit, formState: { errors }, setValue, trigger } = useForm({
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = (data: any) => {
-    console.log(data); // Handle form submission here
-    // Example logic for signup success
-    setTimeout(() => {
-      alert("Signup successful!");
-      window.location.href = '/login'; // Redirect to login page
-    }, 2000);
+  const onSubmit = async (data: any) => {
+    try {
+      // First, check if the username exists
+      const usernameResponse = await axios.get(`http://localhost:8000/api/v1/auth/check-username/${data.username}`);
+      
+      if (usernameResponse.status === 200 && usernameResponse.data.exists) {
+        // If the username exists, show an error message
+        setAuthError('Username is already taken');
+        return; // Stop the submission process
+      }
+  
+      // If the username is available, proceed with the sign-up request
+      const response = await axios.post('http://localhost:8000/api/v1/auth/sign-up', data);
+  
+      if (response.status === 200) {
+        // On success, show success message and redirect
+        setSuccessMessage('Signup successful!');
+        setTimeout(() => {
+          window.location.href = '/login'; // Redirect to login page after 2 seconds
+        }, 2000);
+      }
+    } catch (error) {
+      // Handle errors from the backend
+      if (axios.isAxiosError(error) && error.response && error.response.data) {
+        setAuthError(error.response.data.message || 'Something went wrong!');
+      } else {
+        setAuthError('Server error, please try again later.');
+      }
+    }
   };
+  
 
   // Dynamically trigger validation on field change
   const handleInputChange = async (field: 'username' | 'password' | 'confirmPassword', value: string) => {
@@ -103,6 +122,7 @@ export default function Signup() {
         </div>
 
         {authError && <div className="text-red-500 text-sm mb-4">{authError}</div>}
+        {successMessage && <div className="text-green-500 text-sm mb-4">{successMessage}</div>}
 
         <form className="mt-6 space-y-6" onSubmit={handleSubmit(onSubmit)}>
           {/* Username Field */}
@@ -127,8 +147,7 @@ export default function Signup() {
           </div>
 
           {/* Password Field */}
-          {/* Password Field */}
-<div>
+          <div>
   <label htmlFor="password" className="block text-sm font-medium text-white">
     Password
   </label>
@@ -169,6 +188,21 @@ export default function Signup() {
           ? 'Weak'
           : 'Very Weak'}
       </span>
+
+      {/* Display additional validation messages when password is weak or moderate */}
+      {passwordStrength < 4 && form.password.length >= 8 && (
+        <div className="text-red-500 text-sm mt-2">
+          {form.password && !/[A-Z]/.test(form.password) && (
+            <p>Password must contain at least one uppercase letter</p>
+          )}
+          {form.password && !/[a-z]/.test(form.password) && (
+            <p>Password must contain at least one lowercase letter</p>
+          )}
+          {form.password && !/[@$!%*?&]/.test(form.password) && (
+            <p>Password must contain at least one special character</p>
+          )}
+        </div>
+      )}
     </div>
   </div>
 </div>
@@ -188,7 +222,6 @@ export default function Signup() {
                 onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                 className="block w-full rounded-md border border-gray-300 bg-white/30 px-3 py-2 text-white placeholder-gray-200 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-indigo-400 sm:text-sm"
               />
-             
             </div>
             {form.confirmPassword && form.confirmPassword !== form.password && (
               <span className="text-red-500 text-sm">Passwords do not match</span>
