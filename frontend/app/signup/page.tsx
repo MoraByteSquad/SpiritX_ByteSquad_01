@@ -44,6 +44,21 @@ const SignUp: NextPage = () => {
 
   useEffect(() => {
     checkPasswordValidations(password);
+    // Password strength calculation
+    const strengthRegex = [
+      /[a-z]/, // lowercase
+      /[A-Z]/, // uppercase
+      /[@$!%*?&]/, // special character
+      /[0-9]/, // number
+    ];
+
+    let strength = 0;
+    strengthRegex.forEach((regex) => {
+      if (regex.test(password)) {
+        strength += 1;
+      }
+    });
+    setPasswordStrength(strength);
   }, [password]);
 
   // Validate form fields
@@ -151,6 +166,33 @@ const SignUp: NextPage = () => {
                 className="block w-full rounded-md border border-gray-300 bg-white/30 px-3 py-2 text-white placeholder-gray-200 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-indigo-400 sm:text-sm"
                 required
               />
+            </div>
+
+            {/* Password Strength Indicator */}
+            <div className="mt-2">
+              <div className="h-2 w-full bg-gray-200 rounded-md">
+                <div
+                  className={`h-2 rounded-md transition-all duration-300 ${
+                    passwordStrength === 4
+                      ? 'bg-green-500'
+                      : passwordStrength === 3
+                      ? 'bg-yellow-500'
+                      : passwordStrength === 2
+                      ? 'bg-orange-500'
+                      : 'bg-red-500'
+                  }`}
+                  style={{ width: `${(passwordStrength / 4) * 100}%` }}
+                ></div>
+              </div>
+              <span className="text-sm text-gray-400">
+                {passwordStrength === 4
+                  ? 'Strong'
+                  : passwordStrength === 3
+                  ? 'Moderate'
+                  : passwordStrength === 2
+                  ? 'Weak'
+                  : 'Very Weak'}
+              </span>
             </div>
 
             {/* Password Validation List */}
