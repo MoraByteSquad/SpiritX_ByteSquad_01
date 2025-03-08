@@ -7,6 +7,7 @@ Welcome to **SecureConnect**, a secure and user-friendly authentication system! 
 
 ## 🌟 Features
 SecureConnect provides:
+
 ✅ **Secure Sign-up** with unique username and strong password validation.
 
 ✅ **Smooth Login** with authentication checks and session management.
