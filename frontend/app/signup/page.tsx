@@ -132,7 +132,7 @@ const SignUp: NextPage = () => {
           <h2 className="mt-6 text-2xl font-bold text-white">Create a new account</h2>
         </div>
 
-        {message && <div className="text-red-500 text-sm mb-4">{message}</div>}
+        {message && <div className="text-green-500 text-sm mb-4">{message}</div>}
 
         <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
           {/* Username Field */}
