@@ -24,9 +24,56 @@ const SignUp: NextPage = () => {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [isSignedUp, setIsSignedUp] = useState<boolean>(false); // New state to track successful signup
 
+  // Password constraints state
+  const [passwordValidations, setPasswordValidations] = useState({
+    minLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasSpecialChar: false,
+  });
+
+  // Check password constraints dynamically
+  const checkPasswordValidations = (password: string) => {
+    setPasswordValidations({
+      minLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasSpecialChar: /[@$!%*?&]/.test(password),
+    });
+  };
+
+  useEffect(() => {
+    checkPasswordValidations(password);
+  }, [password]);
+
+  // Validate form fields
+  const validateForm = () => {
+    if (username.length < 8) {
+      setMessage('Username must be at least 8 characters long');
+      return false;
+    }
+
+    if (!passwordValidations.minLength || !passwordValidations.hasUpperCase || !passwordValidations.hasLowerCase || !passwordValidations.hasSpecialChar) {
+      setMessage('Password must be at least 8 characters long, contain one uppercase letter, one lowercase letter, and one special character');
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setMessage('Passwords do not match');
+      return false;
+    }
+
+    setMessage(''); // Clear any previous error messages
+    return true;
+  };
+
   // Define the handleSubmit function with typing for the event
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return; // Stop form submission if validation fails
+    }
 
     const userData = { username, password, confirmPassword };
 
@@ -49,28 +96,6 @@ const SignUp: NextPage = () => {
       }
     }
   };
-
-  // Function to check password strength
-  const checkPasswordStrength = (password: string) => {
-    const strengthRegex = [
-      /[a-z]/, // lowercase
-      /[A-Z]/, // uppercase
-      /[@$!%*?&]/, // special character
-      /[0-9]/, // number
-    ];
-
-    let strength = 0;
-    strengthRegex.forEach((regex) => {
-      if (regex.test(password)) {
-        strength += 1;
-      }
-    });
-    setPasswordStrength(strength);
-  };
-
-  useEffect(() => {
-    checkPasswordStrength(password);
-  }, [password]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -128,31 +153,22 @@ const SignUp: NextPage = () => {
               />
             </div>
 
-            {/* Password Strength Indicator */}
-            <div className="mt-2">
-              <div className="h-2 w-full bg-gray-200 rounded-md">
-                <div
-                  className={`h-2 rounded-md transition-all duration-300 ${
-                    passwordStrength === 4
-                      ? 'bg-green-500'
-                      : passwordStrength === 3
-                      ? 'bg-yellow-500'
-                      : passwordStrength === 2
-                      ? 'bg-orange-500'
-                      : 'bg-red-500'
-                  }`}
-                  style={{ width: `${(passwordStrength / 4) * 100}%` }}
-                ></div>
-              </div>
-              <span className="text-sm text-gray-400">
-                {passwordStrength === 4
-                  ? 'Strong'
-                  : passwordStrength === 3
-                  ? 'Moderate'
-                  : passwordStrength === 2
-                  ? 'Weak'
-                  : 'Very Weak'}
-              </span>
+            {/* Password Validation List */}
+            <div className="mt-2 text-sm text-white">
+              <ul>
+                <li className={`text-${passwordValidations.minLength ? 'green' : 'red'}-500`}>
+                  - Password must be at least 8 characters long
+                </li>
+                <li className={`text-${passwordValidations.hasUpperCase ? 'green' : 'red'}-500`}>
+                  - Password must contain at least one uppercase letter
+                </li>
+                <li className={`text-${passwordValidations.hasLowerCase ? 'green' : 'red'}-500`}>
+                  - Password must contain at least one lowercase letter
+                </li>
+                <li className={`text-${passwordValidations.hasSpecialChar ? 'green' : 'red'}-500`}>
+                  - Password must contain at least one special character
+                </li>
+              </ul>
             </div>
           </div>
 
