@@ -8,22 +8,22 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import DOMPurify from 'dompurify';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 const submitLogin = async (data: { username: string; password: string }) => {
   try {
-    const response = await fetch('http://localhost:8000/api/v1/auth/sign-up', {
-      method: 'POST',
+    const response = await axios.post('http://localhost:8000/api/v1/auth/sign-up', data, {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
     });
-    return response.json();
+    return response.data; // Axios automatically parses JSON
   } catch (error) {
     console.error('API call failed', error);
     return null;
   }
 };
+
 
 const schema = z.object({
   username: z.string().min(8, 'Username must be at least 8 characters long'),
