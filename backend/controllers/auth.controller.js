@@ -4,12 +4,36 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET, JWT_EXPIRES_IN } from '../config/env.js';
 
+const validateUsername = (username) => {
+  // Username should be at least 8 characters long
+  const usernameRegex = /^.{8,50}$/;
+  return usernameRegex.test(username);
+};
+
+const validatePassword = (password) => {
+  // Password should contain at least one lowercase letter, one uppercase letter, and one special character
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,}$/;
+  return passwordRegex.test(password);
+}
+
 export const signUp = async (req, res, next) => {
   const session = await mongoose.startSession(); // Start a session to handle transactions in MongoDB
   session.startTransaction(); // Start a transaction
 
   try {
     const { username, password } = req.body;
+
+    if (!validateUsername(username)) {
+      const error = new Error('Username must be at least 8 characters long');
+      error.statusCode = 422;
+      throw error;
+    }
+
+    if (!validatePassword(password)) {
+      const error = new Error('Password must contain at least one lowercase letter, one uppercase letter, and one special character');
+      error.statusCode = 422;
+      throw error;
+    }
 
     const existingUser = await User.findOne({ username });
   
