@@ -1,84 +1,62 @@
-
 'use client';
-
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod'; // Zod library for validation
-import { zodResolver } from '@hookform/resolvers/zod';
 import axios from 'axios';
+import { NextPage } from 'next';
+import Image from 'next/image';
+import Link from 'next/link'; // Import the Link component
 
-// Define the schema using Zod
-const schema = z.object({
-  username: z.string().min(8, 'Username must be at least 8 characters long'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters long'),
-  confirmPassword: z.string().min(8, 'Confirm Password must be at least 8 characters long'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
+// Define types for the API response structure
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data: {
+    token: string;
+  };
+}
 
-export default function Signup() {
-  const [form, setForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
-
+const SignUp: NextPage = () => {
+  // Type state variables
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [message, setMessage] = useState<string>('');
+  const [token, setToken] = useState<string>('');
   const [passwordStrength, setPasswordStrength] = useState(0);
-  const [authError, setAuthError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [isSignedUp, setIsSignedUp] = useState<boolean>(false); // New state to track successful signup
 
-  const { register, handleSubmit, formState: { errors }, setValue, trigger } = useForm({
-    resolver: zodResolver(schema),
-  });
+  // Define the handleSubmit function with typing for the event
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  const onSubmit = async (data: any) => {
+    const userData = { username, password, confirmPassword };
+
     try {
-      // First, check if the username exists
-      const usernameResponse = await axios.get(`http://localhost:8000/api/v1/auth/check-username/${data.username}`);
-      
-      if (usernameResponse.status === 200 && usernameResponse.data.exists) {
-        // If the username exists, show an error message
-        setAuthError('Username is already taken');
-        return; // Stop the submission process
-      }
-  
-      // If the username is available, proceed with the sign-up request
-      const response = await axios.post('http://localhost:8000/api/v1/auth/sign-up', data);
-  
-      if (response.status === 200) {
-        // On success, show success message and redirect
-        setSuccessMessage('Signup successful!');
-        setTimeout(() => {
-          window.location.href = '/login'; // Redirect to login page after 2 seconds
-        }, 2000);
+      const response = await axios.post<ApiResponse>('http://localhost:8001/api/v1/auth/sign-up', userData);
+
+      if (response.data.success) {
+        setMessage(response.data.message);
+        setToken(response.data.data.token);
+        setIsSignedUp(true); // Set to true when signup is successful
+      } else {
+        setMessage('Failed to create user');
       }
     } catch (error) {
-      // Handle errors from the backend
-      if (axios.isAxiosError(error) && error.response && error.response.data) {
-        setAuthError(error.response.data.message || 'Something went wrong!');
+      if (axios.isAxiosError(error)) {
+        console.error('Error message:', error.message);
+        setMessage(`An error occurred: ${error.message}`);
       } else {
-        setAuthError('Server error, please try again later.');
+        setMessage('An unexpected error occurred');
       }
     }
   };
-  
 
-  // Dynamically trigger validation on field change
-  const handleInputChange = async (field: 'username' | 'password' | 'confirmPassword', value: string) => {
-    setForm({ ...form, [field]: value });
-    await trigger(field); // Trigger validation for the specific field
-  };
-
+  // Function to check password strength
   const checkPasswordStrength = (password: string) => {
     const strengthRegex = [
-      /[a-z]/,  // lowercase
-      /[A-Z]/,  // uppercase
-      /[@$!%*?&]/,  // special character
-      /[0-9]/,  // number
+      /[a-z]/, // lowercase
+      /[A-Z]/, // uppercase
+      /[@$!%*?&]/, // special character
+      /[0-9]/, // number
     ];
 
     let strength = 0;
@@ -91,8 +69,8 @@ export default function Signup() {
   };
 
   useEffect(() => {
-    checkPasswordStrength(form.password);
-  }, [form.password]);
+    checkPasswordStrength(password);
+  }, [password]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -111,20 +89,12 @@ export default function Signup() {
       {/* Signup Form */}
       <div className="w-full max-w-md bg-white/5 backdrop-blur-lg p-8 shadow-lg rounded-lg sm:px-10 border border-white/30">
         <div className="text-center">
-          <Image
-            src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=600"
-            alt="Your Company"
-            width={40}
-            height={40}
-            className="mx-auto"
-          />
           <h2 className="mt-6 text-2xl font-bold text-white">Create a new account</h2>
         </div>
 
-        {authError && <div className="text-red-500 text-sm mb-4">{authError}</div>}
-        {successMessage && <div className="text-green-500 text-sm mb-4">{successMessage}</div>}
+        {message && <div className="text-red-500 text-sm mb-4">{message}</div>}
 
-        <form className="mt-6 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
           {/* Username Field */}
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-white">
@@ -134,79 +104,57 @@ export default function Signup() {
               <input
                 id="username"
                 type="text"
-                value={form.username}
-                {...register('username')}
-                onChange={(e) => handleInputChange('username', e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="block w-full rounded-md border border-gray-300 bg-white/30 px-3 py-2 text-white placeholder-gray-200 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-indigo-400 sm:text-sm"
+                required
               />
-              {form.username.length < 8 && form.username.length > 0 && (
-                <span className="text-red-500 text-sm">Username must be at least 8 characters long</span>
-              )}
-              {errors.username && !form.username.length && <span className="text-red-500 text-sm">{errors.username.message}</span>}
             </div>
           </div>
 
           {/* Password Field */}
           <div>
-  <label htmlFor="password" className="block text-sm font-medium text-white">
-    Password
-  </label>
-  <div className="mt-1">
-    <input
-      id="password"
-      type="password"
-      value={form.password}
-      {...register('password')}
-      onChange={(e) => handleInputChange('password', e.target.value)}
-      className="block w-full rounded-md border border-gray-300 bg-white/30 px-3 py-2 text-white placeholder-gray-200 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-indigo-400 sm:text-sm"
-    />
-    {form.password.length < 8 && form.password.length > 0 && (
-      <span className="text-red-500 text-sm">Password must be at least 8 characters long</span>
-    )}
-    {errors.password && !form.password.length && <span className="text-red-500 text-sm">{errors.password.message}</span>}
-    <div className="mt-2">
-      <div className="h-2 w-full bg-gray-200 rounded-md">
-        <div
-          className={`h-2 rounded-md transition-all duration-300 ${
-            passwordStrength === 4
-              ? 'bg-green-500'
-              : passwordStrength === 3
-              ? 'bg-yellow-500'
-              : passwordStrength === 2
-              ? 'bg-orange-500'
-              : 'bg-red-500'
-          }`}
-          style={{ width: `${(passwordStrength / 4) * 100}%` }}
-        ></div>
-      </div>
-      <span className="text-sm text-gray-400">
-        {passwordStrength === 4
-          ? 'Strong'
-          : passwordStrength === 3
-          ? 'Moderate'
-          : passwordStrength === 2
-          ? 'Weak'
-          : 'Very Weak'}
-      </span>
+            <label htmlFor="password" className="block text-sm font-medium text-white">
+              Password
+            </label>
+            <div className="mt-1">
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="block w-full rounded-md border border-gray-300 bg-white/30 px-3 py-2 text-white placeholder-gray-200 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-indigo-400 sm:text-sm"
+                required
+              />
+            </div>
 
-      {/* Display additional validation messages when password is weak or moderate */}
-      {passwordStrength < 4 && form.password.length >= 8 && (
-        <div className="text-red-500 text-sm mt-2">
-          {form.password && !/[A-Z]/.test(form.password) && (
-            <p>Password must contain at least one uppercase letter</p>
-          )}
-          {form.password && !/[a-z]/.test(form.password) && (
-            <p>Password must contain at least one lowercase letter</p>
-          )}
-          {form.password && !/[@$!%*?&]/.test(form.password) && (
-            <p>Password must contain at least one special character</p>
-          )}
-        </div>
-      )}
-    </div>
-  </div>
-</div>
-
+            {/* Password Strength Indicator */}
+            <div className="mt-2">
+              <div className="h-2 w-full bg-gray-200 rounded-md">
+                <div
+                  className={`h-2 rounded-md transition-all duration-300 ${
+                    passwordStrength === 4
+                      ? 'bg-green-500'
+                      : passwordStrength === 3
+                      ? 'bg-yellow-500'
+                      : passwordStrength === 2
+                      ? 'bg-orange-500'
+                      : 'bg-red-500'
+                  }`}
+                  style={{ width: `${(passwordStrength / 4) * 100}%` }}
+                ></div>
+              </div>
+              <span className="text-sm text-gray-400">
+                {passwordStrength === 4
+                  ? 'Strong'
+                  : passwordStrength === 3
+                  ? 'Moderate'
+                  : passwordStrength === 2
+                  ? 'Weak'
+                  : 'Very Weak'}
+              </span>
+            </div>
+          </div>
 
           {/* Confirm Password Field */}
           <div>
@@ -217,18 +165,18 @@ export default function Signup() {
               <input
                 id="confirmPassword"
                 type="password"
-                value={form.confirmPassword}
-                {...register('confirmPassword')}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="block w-full rounded-md border border-gray-300 bg-white/30 px-3 py-2 text-white placeholder-gray-200 shadow-sm focus:border-indigo-400 focus:outline-none focus:ring-indigo-400 sm:text-sm"
+                required
               />
             </div>
-            {form.confirmPassword && form.confirmPassword !== form.password && (
+            {confirmPassword && confirmPassword !== password && (
               <span className="text-red-500 text-sm">Passwords do not match</span>
             )}
           </div>
 
-          {/* Signup Button */}
+          {/* Submit Button */}
           <div>
             <button
               type="submit"
@@ -239,13 +187,20 @@ export default function Signup() {
           </div>
         </form>
 
-        <p className="mt-6 text-center text-sm text-white">
-          Already have an account?{' '}
-          <a href="/" className="font-medium text-indigo-300 hover:text-indigo-100">
-            Sign in
-          </a>
-        </p>
+        {/* Display login link after successful signup */}
+        {isSignedUp && (
+          <div className="mt-4 text-center">
+            <p className="text-white">
+              Account created successfully!{' '}
+              <Link href="/" className="text-indigo-400 hover:text-indigo-600">
+                Go to login
+              </Link>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default SignUp;
