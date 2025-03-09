@@ -87,7 +87,7 @@ export const signIn = async (req, res, next) => {
       throw error;
     }
 
-    const token = jwt.sign({ userId: user._id, userName: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jwt.sign({ us: user._id, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
     res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'Strict' });
 

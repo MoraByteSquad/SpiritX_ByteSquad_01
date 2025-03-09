@@ -11,11 +11,17 @@ function Dashboard() {
     const [username, setUsername] = useState<string | null>(null);
 
     useEffect(() => {
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+            router.push('/login'); // Redirect to login if no token is found
+            return;
+        }
+
         // Fetch the username from the token
         const fetchedUsername = getUsernameFromToken();
         console.log('Fetched Username:', fetchedUsername); // Debugging to ensure username is fetched correctly
         setUsername(fetchedUsername || 'Guest'); // Fallback to 'Guest' if username is null or undefined
-    }, []);
+    }, [router]);
 
     const signOut = async () => {
         try {
@@ -47,22 +53,8 @@ function Dashboard() {
             </aside>
             <main className="flex-1 p-6">
                 <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow">
-                    <h1 className="text-2xl font-semibold">Welcome, {username || 'Guest'}!</h1>
-                    <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Logout</button>
-                </div>
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-4 rounded-lg shadow">
-                        <h3 className="text-lg font-semibold">Total Sales</h3>
-                        <p className="text-2xl mt-2">$10,000</p>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg shadow">
-                        <h3 className="text-lg font-semibold">New Users</h3>
-                        <p className="text-2xl mt-2">120</p>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg shadow">
-                        <h3 className="text-lg font-semibold">Orders</h3>
-                        <p className="text-2xl mt-2">240</p>
-                    </div>
+                    <h1 className=" text-green-600 text-2xl font-semibold text-center">Welcome, {username || ''}!</h1>
+                    <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 cursor-pointer">Logout</button>
                 </div>
             </main>
         </div>
