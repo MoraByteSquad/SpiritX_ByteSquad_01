@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,12 +22,10 @@ type FormData = {
 };
 
 export default function Login() {
-  
   const [error, setError] = useState<string | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<string | null>(null);
   const router = useRouter();
 
-  
   const {
     register,
     handleSubmit,
@@ -42,7 +40,7 @@ export default function Login() {
     const sanitizedPassword = DOMPurify.sanitize(data.password);
 
     setSubmissionStatus('loading');
-    setError(null); // Clear previous errors
+    setError(null);
 
     try {
       const response = await axios.post(
@@ -53,20 +51,18 @@ export default function Login() {
 
       if (response.data.success) {
         setSubmissionStatus('success');
-        sessionStorage.setItem('token', response.data.token);
-        setTimeout(() => router.push('/dashboard'), 1000);
-        
+        sessionStorage.setItem('token', response.data.data.token);
+
+        // Ensure correct redirection
+        setTimeout(() => router.push('/dashboard'), 1000); // Change "default" if needed
       } else {
         throw new Error('Login failed');
       }
     } catch (err) {
-
       setSubmissionStatus('failed');
       setError((err as Error).message);
     }
   };
-
-  
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -87,7 +83,6 @@ export default function Login() {
           <h2 className="mt-6 text-2xl font-bold text-white">Login</h2>
         </div>
 
-        {/* Form */}
         <form className="mt-6 space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-white">
