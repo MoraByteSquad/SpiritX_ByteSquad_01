@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,21 +10,7 @@ import DOMPurify from 'dompurify';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
-const submitLogin = async (data: { username: string; password: string }) => {
-  try {
-    const response = await axios.post('http://localhost:8000/api/v1/auth/sign-up', data, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.data; // Axios automatically parses JSON
-  } catch (error) {
-    console.error('API call failed', error);
-    return null;
-  }
-};
-
-
+// Schema for validation
 const schema = z.object({
   username: z.string().min(8, 'Username must be at least 8 characters long'),
   password: z.string().min(8, 'Password must be at least 8 characters long'),
@@ -36,6 +22,12 @@ type FormData = {
 };
 
 export default function Login() {
+  
+  const [error, setError] = useState<string | null>(null);
+  const [submissionStatus, setSubmissionStatus] = useState<string | null>(null);
+  const router = useRouter();
+
+  
   const {
     register,
     handleSubmit,
@@ -45,29 +37,36 @@ export default function Login() {
     mode: 'onChange',
   });
 
-  const [submissionStatus, setSubmissionStatus] = useState<string | null>(null);
-  const router = useRouter();
-
   const onSubmit = async (data: FormData) => {
     const sanitizedUsername = DOMPurify.sanitize(data.username);
     const sanitizedPassword = DOMPurify.sanitize(data.password);
 
     setSubmissionStatus('loading');
+    setError(null); // Clear previous errors
 
-    const result = await submitLogin({
-      username: sanitizedUsername,
-      password: sanitizedPassword,
-    });
+    try {
+      const response = await axios.post(
+        'http://localhost:8000/api/v1/auth/sign-in',
+        { username: sanitizedUsername, password: sanitizedPassword },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
 
-    if (result && result.success) {
-      setSubmissionStatus('success');
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1000);
-    } else {
+      if (response.data.success) {
+        setSubmissionStatus('success');
+        sessionStorage.setItem('token', response.data.token);
+        setTimeout(() => router.push('/dashboard'), 1000);
+        
+      } else {
+        throw new Error('Login failed');
+      }
+    } catch (err) {
+
       setSubmissionStatus('failed');
+      setError((err as Error).message);
     }
   };
+
+  
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -76,8 +75,7 @@ export default function Login() {
         <Image
           src="/signupimages/5.png"
           alt="Login Background"
-          layout="fill"
-          objectFit="cover"
+          fill
           className="brightness-75"
           priority
         />
@@ -89,6 +87,7 @@ export default function Login() {
           <h2 className="mt-6 text-2xl font-bold text-white">Login</h2>
         </div>
 
+        {/* Form */}
         <form className="mt-6 space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-white">
@@ -124,17 +123,16 @@ export default function Login() {
             </div>
           </div>
 
+          {/* Submit Button */}
           <div>
             <button
               type="submit"
               className={`w-full flex justify-center rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer
-                ${
-                  submissionStatus === 'success'
-                    ? 'bg-green-600 hover:bg-green-500 focus:ring-green-500'
-                    : submissionStatus === 'failed'
-                    ? 'bg-red-600 hover:bg-red-500 focus:ring-red-500'
-                    : 'bg-indigo-600 hover:bg-indigo-500 focus:ring-indigo-500'
-                }`}
+                ${submissionStatus === 'success'
+                  ? 'bg-green-600 hover:bg-green-500 focus:ring-green-500'
+                  : submissionStatus === 'failed'
+                  ? 'bg-red-600 hover:bg-red-500 focus:ring-red-500'
+                  : 'bg-indigo-600 hover:bg-indigo-500 focus:ring-indigo-500'}`}
               disabled={!isValid || submissionStatus === 'loading'}
             >
               {submissionStatus === 'loading'
@@ -146,6 +144,9 @@ export default function Login() {
                 : 'Login'}
             </button>
           </div>
+
+          {/* Display error message */}
+          {error && <p className="text-red-500 text-center mt-4">{error}</p>}
         </form>
 
         <p className="flex gap-5 mt-6 text-center text-sm text-white justify-center">
